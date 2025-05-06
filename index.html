@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Meme Mashup Generator 🤪🖼️🔥</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet"> 
+    <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        /* Basic Reset */
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s ease, color 0.5s ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Theme Variables */
+        :root {
+            --bg-color: #f0f9ff; --text-color: #0c4a6e; --primary-color: #38bdf8; --secondary-color: #fbbf24; --accent-color: #ec4899; --container-bg: #ffffff; --border-color: #e0f2fe; --button-bg: var(--primary-color); --button-text: white; --button-hover-bg: #0ea5e9; --shadow-color: rgba(56, 189, 248, 0.3); --twin-line-offset: 4px; --twin-line-color: var(--text-color);
+            --success-color: #22c55e; --error-color: #ef4444; 
+            --input-bg-color: var(--bg-color);
+            --input-border-color: var(--primary-color);
+            --meme-font: 'Bangers', cursive; /* Funky font for meme text */
+            --fire-color: #f97316; /* Orange for fire vote */
+            --trash-color: #6b7280; /* Gray for trash vote */
+        }
+        .theme-dark {
+            --bg-color: #1f2937; --text-color: #f3f4f6; --primary-color: #60a5fa; --secondary-color: #facc15; --accent-color: #f472b6; --container-bg: #374151; --border-color: #4b5563; --button-hover-bg: #3b82f6; --shadow-color: rgba(96, 165, 250, 0.3); --twin-line-color: var(--text-color);
+            --success-color: #4ade80; --error-color: #f87171; --input-bg-color: #4b5563; --input-border-color: var(--primary-color);
+            --fire-color: #fb923c; --trash-color: #9ca3af;
+        }
+        .theme-sunset {
+            --bg-color: #fff7ed; --text-color: #7c2d12; --primary-color: #f97316; --secondary-color: #ec4899; --accent-color: #8b5cf6; --container-bg: #ffedd5; --border-color: #fed7aa; --button-hover-bg: #ea580c; --shadow-color: rgba(249, 115, 22, 0.3); --twin-line-color: var(--text-color);
+            --success-color: #84cc16; --error-color: #f97316; --input-bg-color: #fed7aa; --input-border-color: var(--primary-color);
+        }
+        .theme-forest {
+            --bg-color: #f0fdf4; --text-color: #14532d; --primary-color: #22c55e; --secondary-color: #a3e635; --accent-color: #f59e0b; --container-bg: #dcfce7; --border-color: #bbf7d0; --button-hover-bg: #16a34a; --shadow-color: rgba(34, 197, 94, 0.3); --twin-line-color: var(--text-color);
+            --success-color: #16a34a; --error-color: #dc2626; --input-bg-color: #bbf7d0; --input-border-color: var(--primary-color);
+        }
+        .theme-ocean {
+            --bg-color: #eff6ff; --text-color: #1e3a8a; --primary-color: #3b82f6; --secondary-color: #10b981; --accent-color: #6366f1; --container-bg: #dbeafe; --border-color: #bfdbfe; --button-hover-bg: #2563eb; --shadow-color: rgba(59, 130, 246, 0.3); --twin-line-color: var(--text-color);
+            --success-color: #10b981; --error-color: #f43f5e; --input-bg-color: #bfdbfe; --input-border-color: var(--primary-color);
+        }
+        .theme-candy {
+            --bg-color: #fdf2f8; --text-color: #831843; --primary-color: #ec4899; --secondary-color: #a855f7; --accent-color: #22d3ee; --container-bg: #fce7f3; --border-color: #fbcfe8; --button-hover-bg: #db2777; --shadow-color: rgba(236, 72, 153, 0.3); --twin-line-color: var(--text-color);
+            --success-color: #a855f7; --error-color: #e11d48; --input-bg-color: #fbcfe8; --input-border-color: var(--primary-color);
+        }
+        .theme-arcade {
+            --bg-color: #1a1a2e; --text-color: #00ff00; --primary-color: #ff00ff; --secondary-color: #ffff00; --accent-color: #00ffff; --container-bg: #2a2a3e; --border-color: #4a4a5e; --button-text: #1a1a2e; --button-hover-bg: #e000e0; --shadow-color: rgba(255, 0, 255, 0.4); --twin-line-color: var(--text-color);
+            --success-color: #00ff00; --error-color: #ff3333; --input-bg-color: #4a4a5e; --input-border-color: var(--primary-color);
+            --fire-color: #ff8c00; --trash-color: #777;
+        }
+
+        body { /* Body styles */
+            background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 1rem; padding-top: 5rem; box-sizing: border-box;
+        }
+        .theme-selector-container { /* Theme selector styles */
+            position: fixed; top: 1rem; right: 1rem; background-color: var(--container-bg); padding: 0.5rem; border-radius: 10px; box-shadow: 0 6px 12px var(--shadow-color); border: 2px solid var(--border-color); z-index: 1000; width: auto; max-width: 200px;
+        }
+        .theme-selector-container::before, .theme-selector-container::after { content: ''; position: absolute; border-radius: 10px; border: 1px solid var(--twin-line-color); transition: all 0.3s ease-in-out; z-index: -1; }
+        .theme-selector-container::before { top: calc(-0.5 * var(--twin-line-offset)); left: calc(-0.5 * var(--twin-line-offset)); right: calc(-0.5 * var(--twin-line-offset)); bottom: calc(-0.5 * var(--twin-line-offset)); opacity: 0.5; }
+        .theme-selector-container::after { top: calc(-1 * var(--twin-line-offset)); left: calc(-1 * var(--twin-line-offset)); right: calc(-1 * var(--twin-line-offset)); bottom: calc(-1 * var(--twin-line-offset)); opacity: 0.25; }
+        .theme-selector { /* Theme selector dropdown */
+             padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--input-border-color); background-color: var(--input-bg-color); color: var(--text-color); font-weight: 500; cursor: pointer; transition: background-color 0.3s ease, border-color 0.3s ease; width: 100%; font-size: 0.9rem; 
+        }
+        .theme-selector:focus { outline: none; box-shadow: 0 0 0 2px var(--primary-color); }
+
+        .game-container { /* Game container styles */
+            background-color: var(--container-bg); padding: 1.5rem; border-radius: 16px; box-shadow: 0 10px 25px var(--shadow-color); width: 90%; max-width: 750px; text-align: center; border: 2px solid var(--border-color); margin-top: 1rem; position: relative; animation: fadeInScaleUp 0.8s ease-out forwards;
+        }
+        .game-container::before, .game-container::after { content: ''; position: absolute; border-radius: 16px; border: 2px solid var(--twin-line-color); transition: all 0.3s ease-in-out; }
+        .game-container::before { top: calc(-1 * var(--twin-line-offset)); left: calc(-1 * var(--twin-line-offset)); right: calc(-1 * var(--twin-line-offset)); bottom: calc(-1 * var(--twin-line-offset)); z-index: -1; opacity: 0.6; }
+        .game-container::after { top: calc(-2 * var(--twin-line-offset)); left: calc(-2 * var(--twin-line-offset)); right: calc(-2 * var(--twin-line-offset)); bottom: calc(-2 * var(--twin-line-offset)); z-index: -2; opacity: 0.3; }
+        @keyframes fadeInScaleUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        .game-header { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 0.5rem; }
+        .game-title { font-size: 2.5rem; font-weight: 700; color: var(--primary-color); padding-top: 1rem; animation: slideInDown 0.6s ease-out forwards; flex-grow: 1; text-align: left; font-family: var(--meme-font); letter-spacing: 1px;}
+        @keyframes slideInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        
+        #muteBtn { background-color: var(--secondary-color); color: var(--button-text); border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px var(--shadow-color); }
+        #muteBtn:hover { transform: scale(1.1); }
+
+        /* Meme Mashup Specific Styles */
+        .mashup-display { display: flex; justify-content: space-around; align-items: center; gap: 1rem; margin: 1.5rem 0; flex-wrap: wrap;}
+        .meme-image-container {
+            width: 45%; /* Adjust for desired size */
+            max-width: 300px;
+            min-width: 150px;
+            aspect-ratio: 4 / 3; /* Maintain aspect ratio */
+            background-color: var(--input-bg-color);
+            border: 3px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px var(--shadow-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .meme-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Cover the area, might crop */
+            border-radius: 9px; /* Inner rounding */
+            animation: zoomIn 0.5s ease-out;
+        }
+        @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        #captionArea {
+            margin: 1rem 0 1.5rem 0; padding: 1rem; border-radius: 12px; background-color: var(--input-bg-color); border: 2px dashed var(--secondary-color); min-height: 80px; font-size: 1.5rem; color: var(--accent-color); display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.4; font-family: var(--meme-font); letter-spacing: 0.5px;
+            text-shadow: 1px 1px 0px var(--bg-color), -1px -1px 0px var(--bg-color), 1px -1px 0px var(--bg-color), -1px 1px 0px var(--bg-color); /* Simple outline for meme text */
+        }
+        
+        .vote-buttons { display: flex; justify-content: center; gap: 1rem; margin-bottom: 1.5rem; }
+        .vote-btn {
+            font-size: 2.5rem; /* Big emojis */
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background-color: var(--container-bg);
+            box-shadow: 0 4px 6px var(--shadow-color);
+        }
+        .vote-btn:hover { transform: scale(1.15); box-shadow: 0 6px 10px var(--shadow-color); }
+        .vote-btn:active { transform: scale(1.05); }
+        #fireBtn { color: var(--fire-color); }
+        #trashBtn { color: var(--trash-color); }
+
+        #voteFeedback { min-height: 30px; font-weight: 600; font-size: 1.1rem; margin-bottom: 1rem; }
+
+        .game-actions button { /* Main action buttons */
+            background-color: var(--button-bg); color: var(--button-text); padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease; margin: 0.5rem; box-shadow: 0 4px 6px var(--shadow-color); position: relative; border: 2px solid transparent;
+        }
+        .game-actions button::before { content: ''; position: absolute; top: -3px; left: -3px; right: -3px; bottom: -3px; border: 2px solid var(--accent-color); border-radius: 10px; opacity: 0; transition: opacity 0.3s ease; z-index: -1; }
+        .game-actions button:hover::before { opacity: 1; }
+        .game-actions button:hover { background-color: var(--button-hover-bg); transform: translateY(-3px) scale(1.05); box-shadow: 0 6px 12px var(--shadow-color); }
+        .game-actions button:active { transform: translateY(-1px) scale(1.02); }
+        .game-actions button:disabled { background-color: #9ca3af; cursor: not-allowed; opacity: 0.7;}
+        
+        /* Saved Memes Modal (similar to story game) */
+        .modal { display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: var(--container-bg); margin: 10% auto; padding: 25px; border: 2px solid var(--primary-color); border-radius: 12px; width: 80%; max-width: 700px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; }
+        .close-button { color: var(--accent-color); float: right; font-size: 28px; font-weight: bold; }
+        .close-button:hover, .close-button:focus { color: var(--text-color); text-decoration: none; cursor: pointer; }
+        #savedMemesList { list-style: none; padding: 0; max-height: 400px; overflow-y: auto;}
+        #savedMemesList li { background-color: var(--bg-color); border: 1px solid var(--border-color); padding: 10px; margin-bottom: 10px; border-radius: 8px; }
+        #savedMemesList li .saved-mashup-display { display: flex; gap: 10px; margin-bottom: 8px; }
+        #savedMemesList li .saved-meme-image { width: 100px; height: 75px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-color); }
+        #savedMemesList li .saved-caption { font-family: var(--meme-font); font-size: 1.1rem; color: var(--accent-color); flex-grow: 1; text-align: left; }
+        #savedMemesList button.delete-meme-btn { background-color: var(--error-color); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.9rem; float: right;}
+
+
+        .footer { /* Footer styles */
+            margin-top: auto; padding: 1.5rem 1rem; text-align: center; font-size: 0.9rem; color: var(--text-color); width: 100%; background-color: var(--container-bg); border-top: 2px solid var(--border-color); box-shadow: 0 -4px 10px var(--shadow-color); opacity: 0.8; transition: opacity 0.3s ease;
+        }
+        .footer:hover{ opacity: 1; }
+
+        @media (max-width: 768px) { /* Responsive adjustments */
+            .game-title { font-size: 2rem; text-align: center; margin-bottom: 0.5rem;} 
+            .game-header { flex-direction: column-reverse; align-items: center; } 
+            #muteBtn { margin-bottom: 0.75rem; }
+            .game-container { width: 95%; padding: 1.5rem; margin-top: 1rem; max-width: 95%;}
+            .mashup-display { flex-direction: column; gap: 0.5rem; }
+            .meme-image-container { width: 80%; max-width: 280px; }
+            #captionArea { font-size: 1.3rem; }
+            .modal-content { width: 90%; margin-top: 15%; }
+        }
+        @media (max-width: 480px) {
+            body { padding-top: 4.5rem; }
+            .game-title { font-size: 1.8rem; }
+            .game-actions button { padding: 0.6rem 1.2rem; font-size: 0.9rem; width: calc(100% - 1rem); margin: 0.3rem auto;}
+            .game-container { padding: 1rem; }
+            .meme-image-container { width: 90%; min-width: 120px; }
+            #captionArea { font-size: 1.2rem; }
+            .vote-btn { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="theme-selector-container">
+        <select id="themeSwitcher" class="theme-selector" aria-label="Select Theme">
+            <option value="default">Default Bright</option>
+            <option value="theme-dark">Dark Mode 🌙</option>
+            <option value="theme-sunset">Sunset Glow 🌅</option>
+            <option value="theme-forest">Forest Whisper 🌲</option>
+            <option value="theme-ocean">Ocean Deep 🌊</option>
+            <option value="theme-candy">Candy Pop 🍭</option>
+            <option value="theme-arcade">Retro Arcade 👾</option>
+        </select>
+    </div>
+
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title">AI Meme Mashup! 🤪</h1>
+            <button id="muteBtn" title="Toggle Sound">🔈</button>
+        </div>
+        
+        <div class="mashup-display">
+            <div class="meme-image-container" id="imageContainer1">
+                <img src="https://placehold.co/300x200/CCCCCC/333333?text=Loading+Meme+1..." alt="Meme 1" id="memeImage1">
+            </div>
+            <div class="text-4xl font-bold" style="color: var(--primary-color);">+</div>
+            <div class="meme-image-container" id="imageContainer2">
+                <img src="https://placehold.co/300x200/CCCCCC/333333?text=Loading+Meme+2..." alt="Meme 2" id="memeImage2">
+            </div>
+        </div>
+
+        <div id="captionArea">AI is thinking of a caption... 🤔</div>
+
+        <div class="vote-buttons">
+            <button id="fireBtn" class="vote-btn" title="Fire!">🔥</button>
+            <button id="trashBtn" class="vote-btn" title="Trash!">🗑️</button>
+        </div>
+        <div id="voteFeedback"></div>
+
+        <div class="game-actions">
+            <button id="newMashupBtn" class="game-button">New Mashup! 🔄</button>
+            <button id="viewSavedMemesBtn" class="game-button">My Fire Memes 🔥</button>
+        </div>
+    </div>
+
+    <div id="savedMemesModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeModalBtn">&times;</span>
+            <h2 class="text-2xl font-bold mb-4" style="color: var(--primary-color); font-family: var(--meme-font);">Your Hottest Mashups! 🔥</h2>
+            <ul id="savedMemesList">
+                </ul>
+            <p id="noSavedMemesMsg" style="display: none; color: var(--text-color); font-style: italic;">No fire memes saved yet! Go make some!</p>
+        </div>
+    </div>
+
+    <footer class="footer">
+        © 2025 ToolForge. All rights reserved. Built with ❤️ by Anas.
+    </footer>
+
+    <script>
+        // --- Sound & Theme Logic ---
+        const themeSwitcher = document.getElementById('themeSwitcher');
+        const bodyEl = document.body; 
+        const savedTheme = localStorage.getItem('selectedTheme') || 'default';
+        bodyEl.className = savedTheme !== 'default' ? savedTheme : '';
+        themeSwitcher.value = savedTheme;
+        
+        const muteBtn = document.getElementById('muteBtn');
+        let isMuted = localStorage.getItem('isMuted') === 'true';
+        let synth; 
+
+        function playSound(type, note, duration, time) {
+            if (isMuted || !synth) return;
+            try {
+                if (type === 'click') synth.triggerAttackRelease(note || "C4", duration || "16n", time || Tone.now());
+                else if (type === 'generate') synth.triggerAttackRelease(note || "E4", duration || "16n", time || Tone.now());
+                else if (type === 'vote') synth.triggerAttackRelease(note || "G4", duration || "16n", time || Tone.now());
+                else if (type === 'save') synth.triggerAttackRelease(note || "C5", duration || "16n", time || Tone.now());
+            } catch (e) { console.warn("Tone.js error playing sound:", e); }
+        }
+        
+        themeSwitcher.addEventListener('change', function() {
+            bodyEl.className = '';
+            if (this.value !== 'default') { bodyEl.classList.add(this.value); }
+            localStorage.setItem('selectedTheme', this.value);
+            playSound('click', 'E4', '16n');
+        });
+
+        function updateMuteButtonVisual() {
+            muteBtn.textContent = isMuted ? '🔇' : '🔈';
+            muteBtn.title = isMuted ? 'Unmute Sound' : 'Mute Sound';
+        }
+        updateMuteButtonVisual(); 
+
+        muteBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            if (typeof Tone !== 'undefined' && Tone.Destination) { 
+                Tone.Destination.mute = isMuted;
+            }
+            localStorage.setItem('isMuted', isMuted);
+            updateMuteButtonVisual();
+            if (!isMuted) playSound('click', 'G4', '16n');
+        });
+        
+        // --- Game Elements & Logic ---
+        const memeImage1 = document.getElementById('memeImage1');
+        const memeImage2 = document.getElementById('memeImage2');
+        const captionArea = document.getElementById('captionArea');
+        const fireBtn = document.getElementById('fireBtn');
+        const trashBtn = document.getElementById('trashBtn');
+        const newMashupBtn = document.getElementById('newMashupBtn');
+        const voteFeedback = document.getElementById('voteFeedback');
+        const viewSavedMemesBtn = document.getElementById('viewSavedMemesBtn');
+        const savedMemesModal = document.getElementById('savedMemesModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const savedMemesList = document.getElementById('savedMemesList');
+        const noSavedMemesMsg = document.getElementById('noSavedMemesMsg');
+
+        let currentMashup = { item1: null, item2: null, caption: "" };
+
+        const memeData = [
+            // Original 12
+            { id: 1, name: "Distracted Boyfriend", imageUrl: "https://placehold.co/300x200/EF4444/white?text=Distracted+BF", keywords: ["distracted", "jealousy", "new thing", "old thing"], phrases: ["looking at new shiny", "ignoring the old faithful", "when something better comes along"] },
+            { id: 2, name: "Drake Yes/No", imageUrl: "https://placehold.co/300x200/F59E0B/black?text=Drake+Yes/No", keywords: ["drake", "approval", "disapproval", "choice", "preference"], phrases: ["saying no to", "approving of", "the better option is"] },
+            { id: 3, name: "One Does Not Simply", imageUrl: "https://placehold.co/300x200/10B981/white?text=One+Does+Not+Simply", keywords: ["boromir", "lotr", "difficult task", "warning"], phrases: ["one does not simply", "it's harder than it looks", "a challenging feat"] },
+            { id: 4, name: "Expanding Brain", imageUrl: "https://placehold.co/300x200/3B82F6/white?text=Expanding+Brain", keywords: ["brain", "intelligence", "levels", "galaxy brain", "enlightenment"], phrases: ["small brain idea", "big brain move", "cosmic understanding of"] },
+            { id: 5, name: "Woman Yelling at Cat", imageUrl: "https://placehold.co/300x200/EC4899/white?text=Woman+Yells+@+Cat", keywords: ["yelling", "confused cat", "argument", "misunderstanding", "smudge the cat"], phrases: ["when you're being accused", "the cat's innocent face", "a heated discussion about salad"] },
+            { id: 6, name: "This is Fine", imageUrl: "https://placehold.co/300x200/FBBF24/black?text=This+is+Fine+Dog", keywords: ["dog", "fire", "chaos", "denial", "coping"], phrases: ["everything is burning but", "pretending it's all okay", "when life is a mess"] },
+            { id: 7, name: "Surprised Pikachu", imageUrl: "https://placehold.co/300x200/FACC15/black?text=Surprised+Pikachu", keywords: ["pikachu", "surprised", "shocked", "unexpected outcome"], phrases: ["when the obvious happens and you're still shocked", "genuinely surprised by", "didn't see that coming for"] },
+            { id: 8, name: "Change My Mind", imageUrl: "https://placehold.co/300x200/6366F1/white?text=Change+My+Mind", keywords: ["debate", "opinion", "challenge", "steven crowder"], phrases: ["unpopular opinion:", "prove me wrong about", "is actually good, change my mind"] },
+            { id: 9, name: "Grumpy Cat", imageUrl: "https://placehold.co/300x200/6B7280/white?text=Grumpy+Cat+NO", keywords: ["grumpy cat", "no", "annoyed", "unimpressed"], phrases: ["my face when", "the answer is always no for", "not amused by"] },
+            { id: 10, name: "Success Kid", imageUrl: "https://placehold.co/300x200/22C55E/black?text=Success+Kid", keywords: ["success", "kid", "fist pump", "achievement", "yes!"], phrases: ["that feeling of pure success with", "nailed it!", "when you finally achieve"] },
+            { id: 11, name: "Philosoraptor", imageUrl: "https://placehold.co/300x200/06B6D4/white?text=Philosoraptor", keywords: ["dinosaur", "philosophy", "deep thoughts", "questioning"], phrases: ["if X is Y, then is Z also A?", "makes you think about", "deep questions regarding"] },
+            { id: 12, name: "Mocking Spongebob", imageUrl: "https://placehold.co/300x200/FDE047/black?text=MoCkInG+SpOnGeBoB", keywords: ["spongebob", "mocking", "sarcasm", "copying"], phrases: ["wHeN sOmEoNe SaYs", "iS tHaT hOw YoU sOuNd talking about", "mimicking your argument on"] },
+            // Adding more entries
+            { id: 13, name: "Hide the Pain Harold", imageUrl: "https://placehold.co/300x200/9CA3AF/white?text=Harold+Pain", keywords: ["harold", "pain", "smile", "suffering", "awkward"], phrases: ["smiling through the pain of", "when you have to pretend for", "that internal scream about"] },
+            { id: 14, name: "Roll Safe / Think About It", imageUrl: "https://placehold.co/300x200/8B5CF6/white?text=Roll+Safe", keywords: ["think", "smart", "logic", "advice", "tap head"], phrases: ["can't fail if you don't try with", "the ultimate life hack for", "think about it, if you just"] },
+            { id: 15, name: "Ancient Aliens Guy", imageUrl: "https://placehold.co/300x200/A3E635/black?text=Aliens+Guy", keywords: ["aliens", "history channel", "conspiracy", "giorgio tsoukalos"], phrases: ["is it possible? yes, because of", "I'm not saying it was aliens, but... it was", "the ancient astronaut theorists believe"] },
+            { id: 16, name: "Is This a Pigeon?", imageUrl: "https://placehold.co/300x200/FB7185/black?text=Is+This+Pigeon", keywords: ["butterfly", "pigeon", "mistaken identity", "anime", "confusion"], phrases: ["me looking at X and wondering if it's Y", "is this... love for", "confusing A with B"] },
+            { id: 17, name: "Two Buttons", imageUrl: "https://placehold.co/300x200/F472B6/black?text=Two+Buttons", keywords: ["choice", "dilemma", "stress", "sweating", "decision"], phrases: ["choosing between X and Y", "the impossible decision of", "sweating over whether to"] },
+            { id: 18, name: "Left Exit 12 Off Ramp", imageUrl: "https://placehold.co/300x200/2DD4BF/black?text=Exit+12+Ramp", keywords: ["car", "exit ramp", "sudden turn", "drastic change", "swerve"], phrases: ["me suddenly changing my mind about", "when you almost miss your chance for", "making a sharp turn towards"] },
+            { id: 19, name: "UNO Draw 25", imageUrl: "https://placehold.co/300x200/F87171/white?text=UNO+Draw+25", keywords: ["uno", "draw 25", "refusal", "sacrifice", "rather not"], phrases: ["would you rather X or draw 25?", "I'd rather draw 25 than deal with", "the ultimate sacrifice to avoid"] },
+            { id: 20, name: "Buff Doge vs Cheems", imageUrl: "https://placehold.co/300x200/FCD34D/black?text=Doge+vs+Cheems", keywords: ["doge", "cheems", "strong vs weak", "past vs present", "comparison"], phrases: ["back in my day, we had X (Doge), now it's all Y (Cheems)", "the chad X versus the virgin Y", "how it started vs how it's going with"] },
+            { id: 21, name: "Bernie Sanders Mittens", imageUrl: "https://placehold.co/300x200/A5B4FC/black?text=Bernie+Mittens", keywords: ["bernie", "mittens", "cold", "inauguration", "waiting"], phrases: ["me waiting patiently for", "just trying to stay warm during", "unimpressed by the whole situation with"] },
+            { id: 22, name: "Trade Offer", imageUrl: "https://placehold.co/300x200/C084FC/white?text=Trade+Offer", keywords: ["trade", "offer", "deal", "tiktok", "receive"], phrases: ["I receive X, you receive Y. Fair trade for", "making an offer you can't refuse for", "the art of the deal with"] },
+            { id: 23, name: "Panik Kalm Panik", imageUrl: "https://placehold.co/300x200/F0ABFC/black?text=Panik+Kalm", keywords: ["panic", "calm", "meme man", "reaction", "rollercoaster"], phrases: ["X happens (panik), then Y happens (kalm), then Z happens (PANIK!) about", "my emotional state during", "a cycle of panic and calm regarding"] },
+            { id: 24, name: "They Don't Know", imageUrl: "https://placehold.co/300x200/7DD3FC/black?text=They+Don't+Know", keywords: ["party", "alone", "secret", "thinking", "introvert"], phrases: ["they don't know I'm secretly planning", "standing in the corner thinking about", "when you have a secret about"] },
+            { id: 25, name: "Leonardo DiCaprio Laughing", imageUrl: "https://placehold.co/300x200/BAE6FD/black?text=Leo+Laughing", keywords: ["leo", "laughing", "django", "mocking", "sarcastic joy"], phrases: ["my reaction when someone says X about Y", "that evil little laugh for", "finding amusement in the chaos of"] },
+            { id: 26, name: "Squidward Looking Out Window", imageUrl: "https://placehold.co/300x200/67E8F9/black?text=Squidward+Window", keywords: ["squidward", "window", "sad", "watching others", "FOMO"], phrases: ["me watching everyone else enjoy X", "longing for Y from afar", "when you're stuck inside during"] },
+            { id: 27, name: "Stonks", imageUrl: "https://placehold.co/300x200/22D3EE/black?text=Stonks+Man", keywords: ["stonks", "stocks", "finance", "meme man", "profit"], phrases: ["when you make a good decision about X and feel like", "investing in Y be like", "financial genius move for"] },
+            { id: 28, name: "Always Has Been", imageUrl: "https://placehold.co/300x200/A78BFA/white?text=Always+Has+Been", keywords: ["astronaut", "gun", "revelation", "truth", "conspiracy"], phrases: ["Wait, it's all X? Always has been.", "The shocking truth about Y.", "Realizing Z was the case all along."] },
+            { id: 29, name: "Crying Cat", imageUrl: "https://placehold.co/300x200/D8B4FE/black?text=Crying+Cat", keywords: ["cat", "crying", "sad", "emotional", "thumbs up"], phrases: ["sad but trying to be positive about X", "when Y makes you cry but you say it's fine", "holding back tears during Z"] },
+            { id: 30, name: "Coffin Dance", imageUrl: "https://placehold.co/300x200/DDD6FE/black?text=Coffin+Dance", keywords: ["coffin", "dance", "fail", "ghana", "funeral"], phrases: ["when X is about to go wrong", "the inevitable outcome of Y", "celebrating the demise of Z"] },
+            // Add 20 more for a total of 50+
+            { id: 31, name: "Swole Doge", imageUrl: "https://placehold.co/300x200/FBCFE8/black?text=Swole+Doge", keywords: ["doge", "strong", "buff", "fitness", "powerful"], phrases: ["after one workout involving X", "feeling powerful because of Y", "the Chad version of Z"] },
+            { id: 32, name: "Virgin vs Chad", imageUrl: "https://placehold.co/300x200/F9A8D4/black?text=Virgin+vs+Chad", keywords: ["virgin", "chad", "comparison", "beta", "alpha"], phrases: ["the Virgin X vs the Chad Y", "why Z is superior", "explaining the difference between A and B"] },
+            { id: 33, name: "Arthur's Fist", imageUrl: "https://placehold.co/300x200/F472B6/black?text=Arthur+Fist", keywords: ["arthur", "fist", "anger", "frustration", "annoyance"], phrases: ["my reaction when X happens", "trying not to get mad about Y", "the internal rage during Z"] },
+            { id: 34, name: "Kermit Sipping Tea", imageUrl: "https://placehold.co/300x200/DB2777/white?text=Kermit+Tea", keywords: ["kermit", "tea", "gossip", "none of my business", "observing drama"], phrases: ["but that's none of my business when X", "sipping tea while Y unfolds", "just watching the Z drama"] },
+            { id: 35, name: "This is Brilliant But I Like This", imageUrl: "https://placehold.co/300x200/BE185D/white?text=Brilliant+But+This", keywords: ["top gear", "jeremy clarkson", "preference", "choice", "better option"], phrases: ["X is brilliant, but I like Y more", "when you have two good options for Z", "choosing the superior A over B"] },
+            { id: 36, name: "Disaster Girl", imageUrl: "https://placehold.co/300x200/9D174D/white?text=Disaster+Girl", keywords: ["girl", "fire", "disaster", "evil smile", "chaos"], phrases: ["watching X burn like", "my face when Y causes chaos", "secretly enjoying the Z disaster"] },
+            { id: 37, name: "Nut Button", imageUrl: "https://placehold.co/300x200/831843/white?text=Nut+Button", keywords: ["nut", "button", "satisfying", "perfect", "yes"], phrases: ["when X is just perfect", "that feeling of ultimate satisfaction with Y", "hitting the button for Z"] },
+            { id: 38, name: "Confused Nick Young", imageUrl: "https://placehold.co/300x200/581C87/white?text=Confused+Nick", keywords: ["nick young", "confused", "question marks", "what", "huh"], phrases: ["my face when trying to understand X", "when Y makes no sense", "huh? What's happening with Z?"] },
+            { id: 39, name: "Batman Slapping Robin", imageUrl: "https://placehold.co/300x200/7E22CE/white?text=Batman+Slap", keywords: ["batman", "robin", "slap", "correction", "stop saying"], phrases: ["when Robin says X and Batman...", "correcting someone about Y like", "don't you dare mention Z"] },
+            { id: 40, name: "Hide Yo Kids Hide Yo Wife", imageUrl: "https://placehold.co/300x200/A855F7/black?text=Hide+Yo+Kids", keywords: ["antoine dodson", "hide", "warning", "danger", "news report"], phrases: ["hide yo X, hide yo Y, 'cause they're Z'ing everybody out here", "a serious warning about", "when something crazy is happening with"] },
+            { id: 41, name: "Sad Keanu", imageUrl: "https://placehold.co/300x200/D946EF/black?text=Sad+Keanu", keywords: ["keanu reeves", "sad", "bench", "lonely", "contemplating"], phrases: ["me contemplating X alone", "feeling a bit down about Y", "the existential dread of Z"] },
+            { id: 42, name: "First World Problems", imageUrl: "https://placehold.co/300x200/E879F9/black?text=1st+World+Problems", keywords: ["crying woman", "first world", "problems", "trivial", "complaint"], phrases: ["my X isn't working, what a tragedy", "complaining about Y like", "the struggle is real with Z (not really)"] },
+            { id: 43, name: "Awkward Look Monkey Puppet", imageUrl: "https://placehold.co/300x200/F0ABFC/black?text=Awkward+Monkey", keywords: ["monkey", "puppet", "awkward", "side eye", "uncomfortable"], phrases: ["that awkward moment when X", "trying not to make eye contact during Y", "when Z is super uncomfortable"] },
+            { id: 44, name: "Bad Luck Brian", imageUrl: "https://placehold.co/300x200/F5D0FE/black?text=Bad+Luck+Brian", keywords: ["bad luck", "brian", "unfortunate", "fail", "meme"], phrases: ["tries to X, Y happens instead", "the definition of bad luck with Z", "just Brian's luck when it comes to A"] },
+            { id: 45, name: "Overly Attached Girlfriend", imageUrl: "https://placehold.co/300x200/6D28D9/white?text=Attached+GF", keywords: ["girlfriend", "attached", "creepy", "stalker", "obsessed"], phrases: ["I saw you liked X, so I...", "thinking about Y all the time", "never letting Z go"] },
+            { id: 46, name: "Skeptical Third World Kid", imageUrl: "https://placehold.co/300x200/5B21B6/white?text=Skeptical+Kid", keywords: ["skeptical", "kid", "third world", "doubt", "really?"], phrases: ["so you're telling me X?", "I find Y hard to believe", "really? That's your problem with Z?"] },
+            { id: 47, name: "Matrix Morpheus", imageUrl: "https://placehold.co/300x200/4C1D95/white?text=Morpheus+What+If", keywords: ["morpheus", "matrix", "what if I told you", "revelation", "truth pill"], phrases: ["what if I told you X?", "the truth about Y is...", "opening your mind to Z"] },
+            { id: 48, name: "Yo Dawg Heard You Like", imageUrl: "https://placehold.co/300x200/3B0764/white?text=Yo+Dawg+Xzibit", keywords: ["xzibit", "yo dawg", "recursion", "inception", "pimp my ride"], phrases: ["yo dawg, I heard you like X, so I put an X in your X so you can...", "it's X all the way down with Y", "the Z-ception"] },
+            { id: 49, name: "Futurama Fry / Not Sure If", imageUrl: "https://placehold.co/300x200/2E1065/white?text=Not+Sure+Fry", keywords: ["fry", "futurama", "not sure if", "suspicious", "doubtful"], phrases: ["not sure if X, or just Y", "is Z really happening, or...", "that suspicious feeling about A"] },
+            { id: 50, name: "Winter is Coming", imageUrl: "https://placehold.co/300x200/1E1B4B/white?text=Winter+is+Coming", keywords: ["ned stark", "game of thrones", "winter", "warning", "brace yourselves"], phrases: ["brace yourselves, X is coming", "the inevitable Y is approaching", "preparing for the harsh Z"] }
+        ];
+        
+        const captionTemplates = [
+            (k1, k2, p1, p2, n1, n2) => `When ${k1} meets ${k2}, it's like ${p1} but with more ${n2}! 😂`,
+            (k1, k2, p1, p2, n1, n2) => `Is that ${n1} ${p2}? No, it's just ${k1} having a ${k2} moment. 🤯`,
+            (k1, k2, p1, p2, n1, n2) => `My brain trying to process ${n1} and ${n2} at the same time: ${p1}... then ${p2}! 🤪`,
+            (k1, k2, p1, p2, n1, n2) => `You thought ${k1} was wild? Try adding a dash of ${k2}! Result: ${n1} ${p2}. 🔥`,
+            (k1, k2, p1, p2, n1, n2) => `The ultimate crossover: ${n1} x ${n2}. Caption this: "${p1}, but ${k2}!" 🤔`,
+            (k1, k2, p1, p2, n1, n2) => `That moment when ${p1} and you realize ${p2}. It's a total ${k1}-${k2} vibe. ✨`,
+            (k1, k2, p1, p2, n1, n2) => `Forget ${n1}, the real deal is when ${k1} from ${n1} encounters ${k2} from ${n2}. It's pure ${p1} leading to ${p2}!`,
+            (k1, k2, p1, p2, n1, n2) => `${n1} logic: ${p1}. ${n2} logic: ${p2}. Mashup logic: ${k1} and ${k2} forever! 🤯`
+        ];
+
+        function pickRandomItems() {
+            const index1 = Math.floor(Math.random() * memeData.length);
+            let index2 = Math.floor(Math.random() * memeData.length);
+            while (index2 === index1) { 
+                index2 = Math.floor(Math.random() * memeData.length);
+            }
+            return [memeData[index1], memeData[index2]];
+        }
+
+        function generateCaption(item1, item2) {
+            const k1 = item1.keywords[Math.floor(Math.random() * item1.keywords.length)];
+            const k2 = item2.keywords[Math.floor(Math.random() * item2.keywords.length)];
+            const p1 = item1.phrases[Math.floor(Math.random() * item1.phrases.length)];
+            const p2 = item2.phrases[Math.floor(Math.random() * item2.phrases.length)];
+            const n1 = item1.name;
+            const n2 = item2.name;
+
+            const template = captionTemplates[Math.floor(Math.random() * captionTemplates.length)];
+            return template(k1, k2, p1, p2, n1, n2);
+        }
+
+        function displayMashup(item1, item2, caption) {
+            memeImage1.src = item1.imageUrl;
+            memeImage1.alt = item1.name;
+            memeImage1.onerror = () => { memeImage1.src = 'https://placehold.co/300x200/CCCCCC/333333?text=Image+Error'; };
+            memeImage2.src = item2.imageUrl;
+            memeImage2.alt = item2.name;
+            memeImage2.onerror = () => { memeImage2.src = 'https://placehold.co/300x200/CCCCCC/333333?text=Image+Error'; };
+            captionArea.textContent = caption;
+            currentMashup = { item1, item2, caption };
+            voteFeedback.textContent = ""; 
+            fireBtn.disabled = false;
+            trashBtn.disabled = false;
+        }
+
+        function loadNextMashup() {
+            captionArea.textContent = "AI is cooking up a new meme... 🔥";
+            setTimeout(() => {
+                const [item1, item2] = pickRandomItems();
+                const caption = generateCaption(item1, item2);
+                displayMashup(item1, item2, caption);
+                playSound('generate', 'E4', '8n');
+            }, 700);
+        }
+
+        fireBtn.addEventListener('click', () => handleVote('fire'));
+        trashBtn.addEventListener('click', () => handleVote('trash'));
+
+        function handleVote(voteType) {
+            playSound('vote', voteType === 'fire' ? 'C5' : 'C3', '16n');
+            fireBtn.disabled = true;
+            trashBtn.disabled = true;
+
+            if (voteType === 'fire') {
+                voteFeedback.textContent = "You think it's FIRE! 🔥🔥🔥 Saved to your collection!";
+                voteFeedback.style.color = "var(--fire-color)";
+                saveMashup(currentMashup);
+            } else {
+                voteFeedback.textContent = "Okay, this one's TRASH! 🗑️ Let's try another.";
+                voteFeedback.style.color = "var(--trash-color)";
+            }
+            setTimeout(loadNextMashup, 1500);
+        }
+        
+        newMashupBtn.addEventListener('click', () => {
+            loadNextMashup();
+        });
+
+        function saveMashup(mashup) {
+            if (!mashup.item1 || !mashup.item2) return; 
+            const savedMemes = JSON.parse(localStorage.getItem('aiFireMemes')) || [];
+            const isDuplicate = savedMemes.some(m => 
+                m.caption === mashup.caption && 
+                m.item1.name === mashup.item1.name && 
+                m.item2.name === mashup.item2.name
+            );
+            if (!isDuplicate) {
+                savedMemes.push({ ...mashup, id: Date.now() }); 
+                localStorage.setItem('aiFireMemes', JSON.stringify(savedMemes));
+            }
+        }
+
+        viewSavedMemesBtn.addEventListener('click', () => {
+            renderSavedMemes();
+            savedMemesModal.style.display = "block";
+            playSound('click', 'F4', '16n');
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            savedMemesModal.style.display = "none";
+            playSound('click', 'D4', '16n');
+        });
+        window.addEventListener('click', (event) => {
+            if (event.target == savedMemesModal) savedMemesModal.style.display = "none";
+        });
+
+        function renderSavedMemes() {
+            const memes = JSON.parse(localStorage.getItem('aiFireMemes')) || [];
+            savedMemesList.innerHTML = '';
+            if (memes.length === 0) {
+                noSavedMemesMsg.style.display = "block";
+            } else {
+                noSavedMemesMsg.style.display = "none";
+                memes.forEach(meme => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="saved-mashup-display">
+                            <img src="${meme.item1.imageUrl}" alt="${meme.item1.name}" class="saved-meme-image">
+                            <img src="${meme.item2.imageUrl}" alt="${meme.item2.name}" class="saved-meme-image">
+                        </div>
+                        <p class="saved-caption">${meme.caption}</p>
+                        <button class="delete-meme-btn" data-id="${meme.id}">🗑️ Delete</button>
+                    `;
+                    li.querySelector('.delete-meme-btn').addEventListener('click', (e) => {
+                        deleteMeme(parseInt(e.target.dataset.id));
+                    });
+                    savedMemesList.appendChild(li);
+                });
+            }
+        }
+
+        function deleteMeme(memeId) {
+            let memes = JSON.parse(localStorage.getItem('aiFireMemes')) || [];
+            memes = memes.filter(meme => meme.id !== memeId);
+            localStorage.setItem('aiFireMemes', JSON.stringify(memes));
+            renderSavedMemes();
+            playSound('click', 'C3', '8n');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof Tone !== 'undefined') {
+                 synth = new Tone.Synth({
+                    oscillator: { type: "sawtooth" }, 
+                    envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 }
+                }).toDestination();
+                if (Tone.Destination) Tone.Destination.mute = isMuted;
+            } else {
+                console.warn("Tone.js not loaded. Sound effects will be unavailable.");
+            }
+            
+            loadNextMashup(); 
+
+            const gameActionButtons = document.querySelectorAll('.game-actions button');
+            gameActionButtons.forEach(button => {
+                button.addEventListener('click', () => playSound('click', 'D4', '16n'));
+            });
+             // Add onerror handlers for initial images too, just in case
+            memeImage1.onerror = () => { memeImage1.src = 'https://placehold.co/300x200/CCCCCC/333333?text=Image+Error'; };
+            memeImage2.onerror = () => { memeImage2.src = 'https://placehold.co/300x200/CCCCCC/333333?text=Image+Error'; };
+        });
+    </script>
+</body>
+</html>
